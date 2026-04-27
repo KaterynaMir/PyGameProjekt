@@ -15,8 +15,8 @@ class Character:
     def draw(self,surface):
         return surface.blit(self.image,(self.x,self.y))
     
-    def draw_rectangle(self,surface):
-        return pygame.draw.rect(surface, None, (self.x,self.y,self.width,self.height))
+    def get_rectangle(self):
+        return pygame.Rect(self.x,self.y,self.width,self.height)
 
 class Player(Character):
     
