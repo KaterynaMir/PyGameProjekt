@@ -20,10 +20,9 @@ class Character:
 
 class Player(Character):
     
-    def __init__(self,name,image,speed,artefact=[],score=0,numlives=1):
+    def __init__(self,name,image,speed,numlives=1):
         super().__init__(name,image,speed,numlives)
-        self.artefact = artefact
-        self.score = score
+    
     
 class Enemy(Character):
 
