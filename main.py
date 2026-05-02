@@ -7,8 +7,8 @@ import gamestate
 class Game:
 
     SCREEN_WIDTH = 800
-    SCREEN_HEIGHT = 600
-    PANEL_HEIGHT = 60
+    SCREEN_HEIGHT = 592
+    PANEL_HEIGHT = 68
 
     def __init__(self):
         pygame.init()

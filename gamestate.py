@@ -3,6 +3,8 @@ import pygame
 import button
 import character
 import object
+import tileset
+import tilemap
 
 
 class GameState:
@@ -62,23 +64,29 @@ class MainMenu(GameState):
 
 class GameScreen(GameState):
     START_POS = (0,0)
-    BG_COLOUR = (25,175,75)
+    BG_COLOUR = (89,193,53)
 
     def __init__(self,screen_width,screen_height,panel_height,pos=START_POS):
         super().__init__(screen_width,screen_height,panel_height)
         player_image_sheet = pygame.image.load("./Assets/red-riding-hood_1.png")
         player_image = self.get_image(player_image_sheet,0,0,32,32,1.5,(0,0,0))
-        self.player = character.Player("Red_hood",player_image,5,3)
-        self.player.x,self.player.y = pos
+        self.player = character.Player("Red_hood",player_image,5,pos,3)
 
         enemy1_image_sheet = pygame.image.load("./Assets/Shoom_Idle.png")
         enemy1_image = self.get_image(enemy1_image_sheet,0,0,48,48,1,(115,135,123))
         enemy1 = character.Enemy("Enemy1",enemy1_image,4,(0,400),"H")
+        self.enemies = pygame.sprite.Group()
+        self.enemies.add(enemy1)
 
         enemy2_image_sheet = pygame.image.load("./Assets/Dude_Monster_Idle_4.png")
         enemy2_image = self.get_image(enemy2_image_sheet,0,0,32,32,1.5,(0,0,0))
         enemy2 = character.Enemy("Enemy2",enemy2_image,4,(200,0),"V")
-        self.enemies = [enemy1,enemy2]
+        self.enemies.add(enemy2)
+
+        self.tile_set = tileset.Tileset("./Assets/tilesheet_forest.png",16,16)
+        self.tile_map = tilemap.Tilemap("./Assets/tile_map.txt")
+        self.solid_codes = [16,17,19,20,23,24,27,28,32,33,35,36,38,39,46,47,50,51,54,55,57,58,61,62]
+        self.solid_obj = self.tile_map.find_solid_tiles(self.solid_codes,self.tile_set)
 
         flower_sheet = pygame.image.load("./Assets/Flowers_With_Outline_SpriteSheet.png")
         flower_list = []
@@ -86,7 +94,7 @@ class GameScreen(GameState):
             for i in range(6):
                 flower_image = self.get_image(flower_sheet, i, j, 32, 32, 1, (0,0,0))    
                 flower_list.append(flower_image)
-        self.flowers_group = object.Object.place_random_objects(30,flower_list,self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
+        self.flowers_group = object.Object.place_random_objects(30,flower_list,self.solid_obj,self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
         
     @staticmethod
     def get_image(sheet,frame_x,frame_y,width,height,scale,colour):
@@ -112,6 +120,7 @@ class GameScreen(GameState):
         else:
             return True
 
+
     def handle_events(self, events):
         for event in events:
             if event.type == pygame.KEYDOWN:
@@ -119,6 +128,7 @@ class GameScreen(GameState):
                 #    return "main_menu"
                 if event.key == pygame.K_p:
                     return "pause"
+        x0,y0 = self.player.x,self.player.y
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
             self.player.x -= self.player.speed
@@ -129,20 +139,28 @@ class GameScreen(GameState):
         if keys[pygame.K_DOWN]:
             self.player.y += self.player.speed
         self.check_inside_screen(self.player,self.SCREEN_WIDTH,self.SCREEN_HEIGHT)
+        self.player.get_rectangle()
+        if pygame.sprite.spritecollide(self.player,self.solid_obj,False, pygame.sprite.collide_mask):
+            self.player.x,self.player.y = x0,y0
+        self.player.get_rectangle()
+
         
         for enemy in self.enemies:
             enemy.move()
             if self.check_inside_screen(enemy,self.SCREEN_WIDTH,self.SCREEN_HEIGHT) == False:
                 enemy.speed = -enemy.speed
-            if self.player.get_rectangle().colliderect(enemy.get_rectangle()):
-                self.player.numlives -=1
-                if self.player.numlives == 0:
-                    return "game_over"
-                else:
-                    self.player.x,self.player.y = self.START_POS
+            enemy.get_rectangle()
+        
+        if pygame.sprite.spritecollide(self.player,self.enemies,False,pygame.sprite.collide_mask):
+            self.player.numlives -=1
+            if self.player.numlives == 0:
+                return "game_over"
+            else:
+                self.player.x,self.player.y = self.START_POS
+                self.player.get_rectangle()
         
         for flower in self.flowers_group:
-            if self.player.get_rectangle().colliderect(flower):
+            if pygame.sprite.collide_rect(self.player,flower):
                 GameState.Score += 10
                 flower.kill()
         return "game"
@@ -151,6 +169,7 @@ class GameScreen(GameState):
     def draw(self,screen):
         screen.fill(self.BG_COLOUR)
         pygame.draw.rect(screen,(0,0,0),(0,self.SCREEN_HEIGHT,self.SCREEN_WIDTH,self.PANEL_HEIGHT))
+        self.tile_map.draw(screen,self.tile_set)
         self.flowers_group.draw(screen)
         self.player.draw(screen)
         for enemy in self.enemies:
