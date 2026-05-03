@@ -20,7 +20,8 @@ class GameState:
         self.PANEL_HEIGHT = panel_height
         self.font1 = pygame.font.Font("./Assets/Swansea-q3pd.ttf", 32)
         self.font2 = pygame.font.Font("./Assets/Block_Stock.ttf", 28)
-        self.font2_big = pygame.font.Font("./Assets/Block_Stock.ttf", 58)    
+        self.font2_big = pygame.font.Font("./Assets/Block_Stock.ttf", 58)
+        self.click_sound =  pygame.mixer.Sound("./Assets/universfield-mouse-click-117076.mp3")
         
     def handle_events(self,events):
         pass
@@ -47,8 +48,12 @@ class MainMenu(GameState):
     def handle_events(self, events):
         for event in events:
             if self.start_button.is_pressed(event):
+                self.click_sound.play()
+                pygame.time.delay(500)
                 return "game"
             elif self.quit_button.is_pressed(event):
+                self.click_sound.play()
+                pygame.time.delay(500)
                 return "quit"
         return "main_menu"
 
@@ -95,7 +100,12 @@ class GameScreen(GameState):
                 flower_image = self.get_image(flower_sheet, i, j, 32, 32, 1, (0,0,0))    
                 flower_list.append(flower_image)
         self.flowers_group = object.Object.place_random_objects(30,flower_list,self.solid_obj,self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
+
+        self.bump_sound = pygame.mixer.Sound("./Assets/freesound_community-small-drum-86171.mp3")
+        self.pick_sound = pygame.mixer.Sound("./Assets/freesound_community-pause-piano-sound-40579.mp3")
+        self.lost_life_sound = pygame.mixer.Sound("./Assets/universfield-falling-game-character-352287.mp3")
         
+
     @staticmethod
     def get_image(sheet,frame_x,frame_y,width,height,scale,colour):
         image = pygame.Surface((width, height)).convert_alpha()
@@ -142,6 +152,7 @@ class GameScreen(GameState):
         self.player.get_rectangle()
         if pygame.sprite.spritecollide(self.player,self.solid_obj,False, pygame.sprite.collide_mask):
             self.player.x,self.player.y = x0,y0
+            self.bump_sound.play()
         self.player.get_rectangle()
 
         
@@ -153,6 +164,8 @@ class GameScreen(GameState):
         
         if pygame.sprite.spritecollide(self.player,self.enemies,False,pygame.sprite.collide_mask):
             self.player.numlives -=1
+            self.lost_life_sound.play()
+            pygame.time.delay(500)
             if self.player.numlives == 0:
                 return "game_over"
             else:
@@ -162,7 +175,10 @@ class GameScreen(GameState):
         for flower in self.flowers_group:
             if pygame.sprite.collide_rect(self.player,flower):
                 GameState.Score += 10
+                self.pick_sound.play()
                 flower.kill()
+                if not self.flowers_group:
+                    return "game_win"
         return "game"
     
 
@@ -191,8 +207,12 @@ class Pause(GameState):
     def handle_events(self, events):
         for event in events:
             if self.menu_button.is_pressed(event):
+                self.click_sound.play()
+                pygame.time.delay(500)
                 return "main_menu"
             elif self.continue_button.is_pressed(event):
+                self.click_sound.play()
+                pygame.time.delay(500)
                 return "game"
         return "pause"
 
@@ -217,8 +237,12 @@ class GameOver(GameState):
     def handle_events(self, events):
         for event in events:
             if self.menu_button.is_pressed(event):
+                self.click_sound.play()
+                pygame.time.delay(500)
                 return "main_menu"
             elif self.quit_button.is_pressed(event):
+                self.click_sound.play()
+                pygame.time.delay(500)
                 return "quit"
         return "game_over"
 
@@ -234,3 +258,37 @@ class GameOver(GameState):
         text_score_black = self.font2.render(f"YOUR SCORE: {GameState.Score}", True, (0,0,0))
         text_score_rect = self.draw_horizontally_centered_text(screen, text_score_black, 250)
         screen.blit(text_score_red,(text_score_rect.x - 3, text_score_rect.y - 3))
+
+
+class GameWin(GameState):
+
+    def __init__(self,screen_width,screen_height,panel_height):
+        super().__init__(screen_width,screen_height,panel_height)
+        self.bg_image = pygame.image.load("./Assets/win_bg_800_660.jpg")
+        self.menu_button = button.Button("MAIN MENU",self.font2,self.BUTTON_COLOUR,self.HOVERED_COLOUR,(30,50),300,75,20)
+        self.quit_button = button.Button("QUIT GAME",self.font2,self.BUTTON_COLOUR,self.HOVERED_COLOUR,(30,570),300,75,20)
+
+    def handle_events(self, events):
+        for event in events:
+            if self.menu_button.is_pressed(event):
+                self.click_sound.play()
+                pygame.time.delay(500)
+                return "main_menu"
+            elif self.quit_button.is_pressed(event):
+                self.click_sound.play()
+                pygame.time.delay(500)
+                return "quit"
+        return "game_win"
+
+    def draw(self,screen):
+        screen.blit(self.bg_image, (0, 0))
+        text_red = self.font2_big.render("YOU WIN!", True, self.RED_TEXT_COLOUR)
+        text_black = self.font2_big.render("YOU WIN!", True, (0,0,0))
+        screen.blit(text_black,(340,150))
+        screen.blit(text_red,(337, 147))
+        self.menu_button.draw(screen)
+        self.quit_button.draw(screen)
+        text_score_red = self.font2.render(f"YOUR SCORE: {GameState.Score}", True, self.RED_TEXT_COLOUR)
+        text_score_black = self.font2.render(f"YOUR SCORE: {GameState.Score}", True, (0,0,0))
+        screen.blit(text_score_black,(350, 250))
+        screen.blit(text_score_red,(347, 247))
