@@ -69,6 +69,7 @@ class MainMenu(GameState):
 
 class GameScreen(GameState):
     START_POS = (0,0)
+    WOLF_POS = (750,450)
     BG_COLOUR = (89,193,53)
 
     def __init__(self,screen_width,screen_height,panel_height,pos=START_POS):
@@ -88,10 +89,22 @@ class GameScreen(GameState):
         enemy2 = character.Enemy("Enemy2",enemy2_image,4,(200,0),"V")
         self.enemies.add(enemy2)
 
-        self.tile_set = tileset.Tileset("./Assets/tilesheet_forest.png",16,16)
+        wolf_image_sheet = pygame.image.load("./Assets/wolf.png")
+        wolf_image = self.get_image(wolf_image_sheet,0,0,48,48,1,(255,255,255))
+        self.wolf = character.Wolf("Wolf",wolf_image,4,(self.WOLF_POS))
+        self.enemies.add(self.wolf)
+
+
+        self.tile_set = tileset.Tileset("./Assets/tilesheet_forest_house.png",16,16)
         self.tile_map = tilemap.Tilemap("./Assets/tile_map.txt")
         self.solid_codes = [16,17,19,20,23,24,27,28,32,33,35,36,38,39,46,47,50,51,54,55,57,58,61,62]
+        self.house_codes = [70,71,72,73,75,76,77,78,80,81,82,83,84,85,86,87,88,89,91,92,93,96]
         self.solid_obj = self.tile_map.find_solid_tiles(self.solid_codes,self.tile_set)
+        self.house = self.tile_map.find_solid_tiles(self.house_codes,self.tile_set)
+        combined_solid_house_group = self.solid_obj.copy()
+        for sprite in self.house:
+            combined_solid_house_group.add(sprite)
+
 
         flower_sheet = pygame.image.load("./Assets/Flowers_With_Outline_SpriteSheet.png")
         flower_list = []
@@ -99,7 +112,7 @@ class GameScreen(GameState):
             for i in range(6):
                 flower_image = self.get_image(flower_sheet, i, j, 32, 32, 1, (0,0,0))    
                 flower_list.append(flower_image)
-        self.flowers_group = object.Object.place_random_objects(30,flower_list,self.solid_obj,self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
+        self.flowers_group = object.Object.place_random_objects(30,flower_list,combined_solid_house_group,self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
 
         self.bump_sound = pygame.mixer.Sound("./Assets/freesound_community-small-drum-86171.mp3")
         self.pick_sound = pygame.mixer.Sound("./Assets/freesound_community-pause-piano-sound-40579.mp3")
@@ -148,6 +161,7 @@ class GameScreen(GameState):
             self.player.y -= self.player.speed
         if keys[pygame.K_DOWN]:
             self.player.y += self.player.speed
+
         self.check_inside_screen(self.player,self.SCREEN_WIDTH,self.SCREEN_HEIGHT)
         self.player.get_rectangle()
         if pygame.sprite.spritecollide(self.player,self.solid_obj,False, pygame.sprite.collide_mask):
@@ -155,11 +169,21 @@ class GameScreen(GameState):
             self.bump_sound.play()
         self.player.get_rectangle()
 
+        if pygame.sprite.spritecollide(self.player,self.house,False, pygame.sprite.collide_mask):
+            return "game_win"
         
         for enemy in self.enemies:
-            enemy.move()
-            if self.check_inside_screen(enemy,self.SCREEN_WIDTH,self.SCREEN_HEIGHT) == False:
-                enemy.speed = -enemy.speed
+            if isinstance(enemy,character.Wolf):
+                x0,y0 = enemy.x,enemy.y
+                enemy.move((self.player.x,self.player.y))
+                enemy.get_rectangle()
+                if pygame.sprite.spritecollide(enemy,self.solid_obj,False, pygame.sprite.collide_mask):
+                    enemy.x,enemy.y = x0,y0
+                self.check_inside_screen(enemy,self.SCREEN_WIDTH,self.SCREEN_HEIGHT)
+            else:
+                enemy.move()
+                if self.check_inside_screen(enemy,self.SCREEN_WIDTH,self.SCREEN_HEIGHT) == False:
+                    enemy.speed = -enemy.speed
             enemy.get_rectangle()
         
         if pygame.sprite.spritecollide(self.player,self.enemies,False,pygame.sprite.collide_mask):
@@ -170,6 +194,8 @@ class GameScreen(GameState):
                 return "game_over"
             else:
                 self.player.x,self.player.y = self.START_POS
+                self.wolf.x,self.wolf.y = self.WOLF_POS
+                self.wolf.get_rectangle()
                 self.player.get_rectangle()
         
         for flower in self.flowers_group:
@@ -177,8 +203,6 @@ class GameScreen(GameState):
                 GameState.Score += 10
                 self.pick_sound.play()
                 flower.kill()
-                if not self.flowers_group:
-                    return "game_win"
         return "game"
     
 

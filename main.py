@@ -36,13 +36,13 @@ class Game:
                 if event.type == pygame.QUIT:
                     self.running = False
             next_state = self.states[self.current_state].handle_events(events)
-            self.music_manager.update(next_state)
             if self.current_state == "main_menu" and next_state == "game":
                 gamestate.GameState.Score = 0
                 self.states["game"] = gamestate.GameScreen(Game.SCREEN_WIDTH,Game.SCREEN_HEIGHT,Game.PANEL_HEIGHT)
             if next_state == "quit":
                 self.running = False
                 continue
+            self.music_manager.update(next_state)
             self.current_state = next_state
             self.states[self.current_state].draw(self.screen)
             self.clock.tick(40)

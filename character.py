@@ -1,4 +1,5 @@
 import pygame
+import math
 
 class Character(pygame.sprite.Sprite):
     
@@ -29,12 +30,33 @@ class Player(Character):
     
 class Enemy(Character):
 
-    def __init__(self, name, image, speed, pos, direction):
+    def __init__(self, name, image, speed, pos, direction="H"):
         super().__init__(name, image, speed,pos)
         self.direction = direction
     
     def move(self):
         if self.direction == "H": #horisontal
             self.x += self.speed
-        else: # vertical direction
+        elif self.direction == "V": # vertical direction
             self.y += self.speed
+
+
+class Wolf(Enemy):
+
+    def __init__(self, name, image, speed, pos):
+        super().__init__(name, image, speed, pos)
+    
+    
+    def move(self, prey_pos):
+        prey_x,prey_y = prey_pos
+        if abs(self.x - prey_x) >= abs(self.y - prey_y):
+            if self.x > prey_x:
+                self.x -= self.speed
+            elif self.x < prey_x:
+                self.x += self.speed
+        else:
+            if self.y > prey_y:
+                self.y -= self.speed
+            elif self.y < prey_y:
+                self.y += self.speed
+                

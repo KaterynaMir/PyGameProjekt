@@ -14,11 +14,17 @@ class MusicManager:
     
     def play(self):
         song, repeat_flag = self.music[self.curent_state]
-        pygame.mixer.music.load(song)
-        pygame.mixer.music.play(repeat_flag)
+        try:
+            pygame.mixer.music.load(song)
+            pygame.mixer.music.play(repeat_flag)
+            return True
+        except pygame.error:
+            print(f"Can't play the music because the file {song} is not found.")
+            return False
     
     def stop(self):
-        pygame.mixer.music.stop()
+        if pygame.mixer.music.get_busy():
+            pygame.mixer.music.stop()
     
     def update(self,state):
         if state != self.curent_state:
